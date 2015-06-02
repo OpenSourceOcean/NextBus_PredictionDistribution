@@ -7,8 +7,8 @@ package nextbus.predictiondist.data;
 
 
 /**
- * StreamSerializer for StopPredictionInfo
- * @author noky
+ * StreamSerializer for CustomerAndRouteKey
+ * @author Onkarr
  */
 public class KryoSerializerCustomerAndRouteKey extends KryoSerializerBase<CustomerAndRouteKey> {
 	/**
