@@ -15,8 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
-import nextbus.predictiondist.data.CustomerAndRouteKey;
 import nextbus.predictiondist.data.StopDataFactory;
 import nextbus.predictiondist.data.StopKey;
 import nextbus.predictiondist.data.StopPrediction;
@@ -24,13 +22,9 @@ import nextbus.predictiondist.tasks.GenericTask;
 import nextbus.predictiondist.tasks.GenericTaskConfig;
 import nextbus.predictiondist.tasks.IdeaType;
 
-import com.hazelcast.core.EntryEvent;
-import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.IMap;
-import com.hazelcast.core.MapEvent;
-import com.hazelcast.core.MultiMap;
 
 /**
  * Tests for looking up predictions in bulk by route/customer
@@ -49,12 +43,6 @@ public class HazelcastBulkFetchTester {
 	private final int numPredsPerStop = 10;
 	private final long runtimeMillis = (long) 60 * 1000L;
 	private static IMap<StopKey, StopPrediction> imap;
-	private static MultiMap<String, CustomerAndRouteKey> routesPerStopMultiMap;
-	private static MultiMap<CustomerAndRouteKey, StopKey> stopsPerRouteMultiMap;
-	private static MultiMap<CustomerAndRouteKey, StopPrediction> customerrRouteMultiMap;
-	private static final String ROUTES_STOP_MULTIMAP_ID = "routesPerStop-multimap";
-	private static final String ROUTES_STOPS_MULTIMAP_ID = "routesPerStop-multimap";
-	private static final String CUSTOMER_ROUTES_MULTIMAP_ID = "customerRoutes-multimap";
 
 	private static final String MAP_ID = "predictions-test";
 
@@ -77,100 +65,39 @@ public class HazelcastBulkFetchTester {
 		// .getMultiMap(CUSTOMER_ROUTES_MULTIMAP_ID);
 		imap = hazelcastInstance.getMap(MAP_ID);
 
-		if (ideaType.equals(IdeaType.LOCAL_MULTI_MAPS_USING_LISTENRS)
-				|| ideaType.equals(IdeaType.LOCAL_MULTI_MAPS)
-				|| ideaType.equals(IdeaType.LOCAL_SINGLE_MULTI_MAPS)
-				|| ideaType.equals(IdeaType.LOCAL_SINGLE_MULTI_MAPS__LISTENRS)) {
-
-			routesPerStopMultiMap = hazelcastInstance
-					.getMultiMap(ROUTES_STOP_MULTIMAP_ID);
-			stopsPerRouteMultiMap = hazelcastInstance
-					.getMultiMap(ROUTES_STOPS_MULTIMAP_ID);
-			customerrRouteMultiMap = hazelcastInstance
-					.getMultiMap(CUSTOMER_ROUTES_MULTIMAP_ID);
-
-			if (ideaType.equals(IdeaType.LOCAL_MULTI_MAPS_USING_LISTENRS)
-					|| ideaType
-							.equals(IdeaType.LOCAL_SINGLE_MULTI_MAPS__LISTENRS)) {
-				imap.addEntryListener(new MyEntryListener(), true);
-			}
-
-		}
-
 	}
 
 	public Map<StopKey, StopPrediction> getPredictionsForRoutes(
 			String customerId, Set<String> routeIds) {
 
 		Map<StopKey, StopPrediction> allPredictions = new HashMap<StopKey, StopPrediction>();
+		Future<Map<StopKey, StopPrediction>> returnedFuture = runTheTask(
+				customerId, genericTaskConfig);
 
-		if (ideaType.equals(IdeaType.LOCAL_MULTI_MAPS_USING_LISTENRS)
-				|| ideaType.equals(IdeaType.LOCAL_MULTI_MAPS)
-				|| ideaType.equals(IdeaType.LOCAL_SINGLE_MULTI_MAPS)
-				|| ideaType.equals(IdeaType.LOCAL_SINGLE_MULTI_MAPS__LISTENRS)) {
-
-			Set<CustomerAndRouteKey> finalCustemerKeySet = new HashSet<CustomerAndRouteKey>();
-			// Check if routes information is given if given
-			if (genericTaskConfig.getRouteIds() != null) {
-				for (String route : routeIds) {
-					CustomerAndRouteKey customerAndRouteKey = new CustomerAndRouteKey(
-							customerId, route);
-					finalCustemerKeySet.add(customerAndRouteKey);
-
-				}
-			} else {
-				finalCustemerKeySet = (Set<CustomerAndRouteKey>) routesPerStopMultiMap
-						.get(customerId);
-
-			}
-
-			if (!ideaType.equals(IdeaType.LOCAL_SINGLE_MULTI_MAPS)
-					&& !ideaType
-							.equals(IdeaType.LOCAL_SINGLE_MULTI_MAPS__LISTENRS)) {
-				allPredictions = getThePredictions(finalCustemerKeySet,
-						hazelcastInstance);
-			} else {
-
-				for (CustomerAndRouteKey customKey : finalCustemerKeySet) {
-					Set<StopPrediction> predictionsList = (Set<StopPrediction>) customerrRouteMultiMap
-							.get(customKey);
-					for (StopPrediction sp : predictionsList) {
-						allPredictions.put(cutomerRouteKeyTostopKey(customKey),
-								sp);
-					}
-				}
-
-			}
-
-		} else {
-
-			Future<Map<StopKey, StopPrediction>> returnedFuture = runTheTask(
-					customerId, genericTaskConfig);
-
-			/*
-			 * For some reason distributed Atomic reference is not working /*
-			 * Done flag required for not proceed further to read the output or
-			 * /* future.get() will throw interrupted exception and will not
-			 * return all /* expected results
-			 */
-			boolean notDoneFlag = true;
-			while (notDoneFlag) {
-				// Do something here in parallel
-				if (returnedFuture.isDone()) {
-					notDoneFlag = false;
-				}
-			}
-			try {
-				// Not required extra map reference will clean later
-				allPredictions
-						.putAll((Map<? extends StopKey, ? extends StopPrediction>) returnedFuture
-								.get());
-
-			} catch (InterruptedException | ExecutionException e) {
-
-				e.printStackTrace();
+		/*
+		 * For some reason distributed Atomic reference is not working /* Done
+		 * flag required for not proceed further to read the output or /*
+		 * future.get() will throw interrupted exception and will not return all
+		 * /* expected results
+		 */
+		boolean notDoneFlag = true;
+		while (notDoneFlag) {
+			// Do something here in parallel
+			if (returnedFuture.isDone()) {
+				notDoneFlag = false;
 			}
 		}
+		try {
+			// Not required extra map reference will clean later
+			allPredictions
+					.putAll((Map<? extends StopKey, ? extends StopPrediction>) returnedFuture
+							.get());
+
+		} catch (InterruptedException | ExecutionException e) {
+
+			e.printStackTrace();
+		}
+
 		return allPredictions;
 
 	}
@@ -307,24 +234,6 @@ public class HazelcastBulkFetchTester {
 						.createDummyData(custId, routeId, numStopsPerRoute,
 								numPredsPerStop);
 				imap.putAll(data);
-
-				if (ideaType.equals(IdeaType.LOCAL_MULTI_MAPS)
-						|| ideaType.equals(IdeaType.LOCAL_SINGLE_MULTI_MAPS)) {
-					for (Map.Entry<StopKey, StopPrediction> entry : data
-							.entrySet()) {
-						CustomerAndRouteKey customerAndRouteKey = stopKeyToCutomerRouteKey(entry
-								.getKey());
-						stopsPerRouteMultiMap.put(customerAndRouteKey,
-								entry.getKey());
-						routesPerStopMultiMap.put(
-								customerAndRouteKey.getProjectId(),
-								customerAndRouteKey);
-						customerrRouteMultiMap.put(customerAndRouteKey,
-								entry.getValue());
-					}
-
-				}
-
 				String routeIdStr = StopDataFactory.getRouteId(routeId);
 				routeIds.add(routeIdStr);
 			}
@@ -415,31 +324,9 @@ public class HazelcastBulkFetchTester {
 		return allKeys;
 	}
 
-	/**
-	 * @param finalCustemerKeySet
-	 * @return Map<StopKey, StopPrediction>
-	 */
-	private Map<StopKey, StopPrediction> getThePredictions(
-			Set<CustomerAndRouteKey> finalCustemerKeySet,
-			HazelcastInstance hazelcastInstance) {
-
-		Map<StopKey, StopPrediction> predictions = new HashMap<StopKey, StopPrediction>();
-
-		IMap<StopKey, StopPrediction> map = hazelcastInstance.getMap(MAP_ID);
-		Set<StopKey> finalStopKeySet = new HashSet<StopKey>();
-
-		for (CustomerAndRouteKey customKey : finalCustemerKeySet) {
-			finalStopKeySet.addAll(stopsPerRouteMultiMap.get(customKey));
-		}
-		predictions = (Map<StopKey, StopPrediction>) map
-				.getAll(finalStopKeySet);
-
-		return predictions;
-	}
-
 	public static void main(String[] args) {
-		IdeaType ideaType = IdeaType.LOCAL_MULTI_MAPS; // .USE_ACTUAL_STOP_KEYS;
-		int numOfCustomer = 1;
+		IdeaType ideaType = IdeaType.MULTI_MAP; // .USE_ACTUAL_STOP_KEYS;
+		int numOfCustomer = 150;
 		if (args != null && args.length > 0) {
 			for (int i = 0; i < args.length; i++) {
 				String arg = args[i];
@@ -464,61 +351,4 @@ public class HazelcastBulkFetchTester {
 		test.doTest();
 	}
 
-	public static class MyEntryListener implements
-			EntryListener<StopKey, StopPrediction> {
-
-		@Override
-		public void entryAdded(EntryEvent<StopKey, StopPrediction> event) {
-			CustomerAndRouteKey customerAndRouteKey = stopKeyToCutomerRouteKey(event
-					.getKey());
-			stopsPerRouteMultiMap.put(customerAndRouteKey, event.getKey());
-			routesPerStopMultiMap.put(customerAndRouteKey.getProjectId(),
-					customerAndRouteKey);
-			System.out
-					.println("Entry added ########################################"
-							+ customerAndRouteKey.toString());
-			customerrRouteMultiMap.put(customerAndRouteKey, event.getValue());
-
-		}
-
-		@Override
-		public void entryRemoved(EntryEvent<StopKey, StopPrediction> event) {
-			// TODO Auto-generated method stub
-		}
-
-		@Override
-		public void entryUpdated(EntryEvent<StopKey, StopPrediction> event) {
-			// TODO Auto-generated method stub
-		}
-
-		@Override
-		public void entryEvicted(EntryEvent<StopKey, StopPrediction> event) {
-			// TODO Auto-generated method stub
-		}
-
-		@Override
-		public void mapEvicted(MapEvent event) {
-			// TODO Auto-generated method stub
-		}
-
-		@Override
-		public void mapCleared(MapEvent event) {
-			// TODO Auto-generated method stub
-
-		}
-
-	}
-
-	public static CustomerAndRouteKey stopKeyToCutomerRouteKey(StopKey stopKey) {
-		return new CustomerAndRouteKey(stopKey.getProjectId(),
-				stopKey.getRouteId());
-
-	}
-
-	public static StopKey cutomerRouteKeyTostopKey(
-			CustomerAndRouteKey customerKey) {
-		return new StopKey(customerKey.getProjectId(),
-				customerKey.getRouteId(), null);
-
-	}
 }
