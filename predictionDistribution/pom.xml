@@ -1,0 +1,145 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>nextbus</groupId>
+	<artifactId>predictionDistributionTest</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>predictionDistributionTest</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.2</version>
+					<configuration>
+						<source>1.7</source>
+						<target>1.7</target>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.3</version>
+				<executions>
+					<!-- Run shade goal on package phase -->
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<!-- add Main-Class to manifest file -->
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>nextbus.predictiondist.DataGridTester</mainClass>
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.18.1</version>
+				<configuration>
+					<additionalClasspathElements>
+						<additionalClasspathElement>Conf</additionalClasspathElement>
+					</additionalClasspathElements>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>spy</id>
+			<name>Spy Repository</name>
+			<layout>default</layout>
+			<url>http://files.couchbase.com/maven2/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>GridGain External Repository</id>
+			<url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
+		</repository>
+		<repository>
+			<id>central</id>
+			<url>http://repo1.maven.org/maven2/</url>
+		</repository>
+	</repositories>
+
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.hazelcast</groupId>
+			<artifactId>hazelcast</artifactId>
+			<version>3.4.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.hazelcast</groupId>
+			<artifactId>hazelcast-client</artifactId>
+			<version>3.4.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.hazelcast</groupId>
+			<artifactId>hazelcast-cloud</artifactId>
+			<version>3.4.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.esotericsoftware</groupId>
+			<artifactId>kryo</artifactId>
+			<version>3.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.cache</groupId>
+			<artifactId>cache-api</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>18.0</version>
+		</dependency>
+
+
+		<!-- <dependency> -->
+		<!-- <groupId>MyJar</groupId> -->
+		<!-- <artifactId>MyJar</artifactId> -->
+		<!-- <scope>system</scope> -->
+		<!-- <version>1.0</version> -->
+
+		<!-- <systemPath>C:\MyInstallations\GridGain\Instance_2\gridgain-enterprise-fabric-7.0.1\libs</systemPath> -->
+		<!-- </dependency> -->
+
+		<!-- <dependency> <groupId>spy</groupId> <artifactId>spymemcached</artifactId> 
+			<version>2.8.1</version> <scope>provided</scope> </dependency> <dependency> 
+			<groupId>net.sf.ehcache</groupId> <artifactId>ehcache</artifactId> <version>2.9.0</version> 
+			</dependency> <dependency> <groupId>redis.clients</groupId> <artifactId>jedis</artifactId> 
+			<version>2.6.0</version> <type>jar</type> <scope>compile</scope> </dependency> 
+			<dependency> <groupId>commons-lang</groupId> <artifactId>commons-lang</artifactId> 
+			<version>2.6</version> </dependency> -->
+	</dependencies>
+</project>

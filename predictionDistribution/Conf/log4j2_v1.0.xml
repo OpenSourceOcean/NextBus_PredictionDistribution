@@ -1,0 +1,60 @@
+?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="OFF">
+
+	<Appenders>
+		<Console name="CONSOLE" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d %-5p [%t] %C{2} (%F:%L) - %m%n" />
+		</Console>
+
+		<!-- Generate rolling log for router with per hour interval policy -->
+		<RollingFile name="ProcessorRollingFile" fileName="/usr/local/hazelcast/log/hazelcast.log"
+			filePattern="/usr/local/hazelcast/log/hazelcast.log.%d{MM-dd-yyyy}-%i.log">
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n</pattern>
+				
+			</PatternLayout>
+			<Policies>
+				<OnStartupTriggeringPolicy />
+				<SizeBasedTriggeringPolicy size="100 KB" />
+				<TimeBasedTriggeringPolicy interval="1" />
+			</Policies>
+			<DefaultRolloverStrategy max="10" />
+		</RollingFile>
+
+		<RollingFile name="RollingFileBasedOnSize" fileName="/usr/local/hazelcast/log/hazelcast_root.log"
+			filePattern="/usr/local/hazelcast/log/hazelcast_root.log.%d{MM-dd-yyyy}-%i.log">
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n</pattern>
+			</PatternLayout>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="100 KB" />
+			</Policies>
+			<DefaultRolloverStrategy max="20" />
+		</RollingFile>
+
+
+
+<!-- 		<!-- Register Async appender --> -->
+<!-- 		<Async name="AsyncRollingFile"> -->
+<!-- 			<AppenderRef ref="ProcessorRollingFile" /> -->
+<!-- 		</Async> -->
+	</Appenders>
+
+	<Loggers>
+		<AsyncLogger name="com.hazelcast.logger.log4j2" level="error"
+			includeLocation="true" additivity="false">
+			<AppenderRef ref="ProcessorRollingFile" />
+		</AsyncLogger>
+			<AsyncLogger name="com.nextbus.logger.log4j2" level="error"
+			includeLocation="true" additivity="false">
+			<AppenderRef ref="ProcessorRollingFile" />
+		</AsyncLogger>
+
+		<Logger name="root" level="debug" additivity="false">
+			<appender-ref ref="RollingFile" level="debug" />
+		</Logger>
+		<Root level="debug" additivity="false">
+			<AppenderRef ref="RollingFileBasedOnSize" />
+		</Root>
+
+	</Loggers>
