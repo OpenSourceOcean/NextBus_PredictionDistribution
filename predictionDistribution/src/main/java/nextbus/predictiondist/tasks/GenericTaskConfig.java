@@ -145,8 +145,8 @@ public class GenericTaskConfig implements DataSerializable {
 	public void writeData(ObjectDataOutput out) throws IOException {
 		out.writeObject(ideaType);
 		out.writeObject(routeIds);
-		out.writeObject(taskKey);
 		out.writeUTF(mapId);
+		out.writeObject(taskKey);
 
 	}
 
@@ -154,8 +154,8 @@ public class GenericTaskConfig implements DataSerializable {
 	public void readData(ObjectDataInput in) throws IOException {
 		ideaType = in.readObject();
 		routeIds = in.readObject();
-		taskKey = in.readObject();
 		mapId = in.readUTF();
+		taskKey = in.readObject();
 	}
 
 //	@Override
